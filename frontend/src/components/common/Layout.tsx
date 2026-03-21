@@ -40,7 +40,7 @@ const SIDEBAR_MARGIN = 12;
 
 // サイドバーグラデーション（アイビーグリーン基調）
 const SIDEBAR_BG =
-  'linear-gradient(180deg, #2D5227 0%, #2D5227 35%, #3F7036 70%, #4A8040 100%)';
+  'linear-gradient(180deg, #3F7036 0%, #3F7036 35%, #4A6937 70%, #4A6937 100%)';
 
 // ダーク背景上のスタイルトークン
 const D = {
@@ -324,13 +324,13 @@ export default function Layout({ children }: LayoutProps) {
             position: 'fixed',
             top: SIDEBAR_MARGIN + 60,
             left: SIDEBAR_MARGIN + currentWidth,
-            background: '#2D5227',
+            background: '#3F7036',
             borderRadius: '0 8px 8px 0',
             width: 24,
             height: 40,
             padding: 0,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            '&:hover': { background: '#3F7036', '& svg': { transform: 'scale(1.1)' } },
+            '&:hover': { background: '#4A6937', '& svg': { transform: 'scale(1.1)' } },
             transition: 'all 0.2s',
             zIndex: 1200,
             display: 'flex',
