@@ -334,6 +334,7 @@ export default function Layout({ children }: LayoutProps) {
           transition: 'width 0.2s ease',
         }}
       >
+        {/* Sidebar content (scrollable) */}
         <Box
           sx={{
             position: 'fixed',
@@ -343,52 +344,51 @@ export default function Layout({ children }: LayoutProps) {
             height: `calc(100vh - ${SIDEBAR_MARGIN * 2}px)`,
             overflow: 'auto',
             transition: 'width 0.2s ease',
-            // Hide scrollbar
             '&::-webkit-scrollbar': { display: 'none' },
             msOverflowStyle: 'none',
             scrollbarWidth: 'none',
           }}
         >
           {sidebarContent(false)}
-
-          {/* Collapse toggle - tab extending from sidebar right edge (Monstera style) */}
-          <IconButton
-            onClick={() => setCollapsed(!collapsed)}
-            sx={{
-              position: 'absolute',
-              top: 60,
-              right: -24,
-              background: '#1a1a1a',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              borderTop: '1px solid rgba(255,255,255,0.3)',
-              borderRight: '1px solid rgba(255,255,255,0.3)',
-              borderBottom: '1px solid rgba(255,255,255,0.3)',
-              borderLeft: 'none',
-              borderRadius: '0 8px 8px 0',
-              width: 24,
-              height: 40,
-              padding: 0,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-              '&:hover': {
-                background: '#1a1a1a',
-                filter: 'brightness(1.15)',
-                '& svg': { transform: 'scale(1.1)' },
-              },
-              transition: 'all 0.2s',
-              zIndex: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {collapsed ? (
-              <ChevronRightIcon sx={{ fontSize: 16, color: DARK.textPrimary, transition: 'transform 0.2s' }} />
-            ) : (
-              <ChevronLeftIcon sx={{ fontSize: 16, color: DARK.textPrimary, transition: 'transform 0.2s' }} />
-            )}
-          </IconButton>
         </Box>
+
+        {/* Collapse toggle - outside overflow container (Monstera style tab) */}
+        <IconButton
+          onClick={() => setCollapsed(!collapsed)}
+          sx={{
+            position: 'fixed',
+            top: SIDEBAR_MARGIN + 60,
+            left: SIDEBAR_MARGIN + currentWidth,
+            background: '#1a1a1a',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(255,255,255,0.3)',
+            borderRight: '1px solid rgba(255,255,255,0.3)',
+            borderBottom: '1px solid rgba(255,255,255,0.3)',
+            borderLeft: 'none',
+            borderRadius: '0 8px 8px 0',
+            width: 24,
+            height: 40,
+            padding: 0,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+            '&:hover': {
+              background: '#1a1a1a',
+              filter: 'brightness(1.15)',
+              '& svg': { transform: 'scale(1.1)' },
+            },
+            transition: 'all 0.2s',
+            zIndex: 1200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {collapsed ? (
+            <ChevronRightIcon sx={{ fontSize: 16, color: DARK.textPrimary, transition: 'transform 0.2s' }} />
+          ) : (
+            <ChevronLeftIcon sx={{ fontSize: 16, color: DARK.textPrimary, transition: 'transform 0.2s' }} />
+          )}
+        </IconButton>
       </Box>
 
       {/* Main Content */}
