@@ -12,7 +12,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LinkIcon from '@mui/icons-material/Link';
 import { ActionButton } from '../components/common';
@@ -28,6 +28,7 @@ export default function MatchingPage() {
   const [jobText, setJobText] = useState('');
   const [engineerText, setEngineerText] = useState('');
   const [engineerFileKey, setEngineerFileKey] = useState('');
+  const [engineerFileName, setEngineerFileName] = useState('');
   const [supplement, setSupplement] = useState<SupplementInfo>({});
   const [result, setResult] = useState<MatchingResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -271,7 +272,7 @@ export default function MatchingPage() {
             <ActionButton
               buttonType="primary"
               size="large"
-              icon={<SearchIcon />}
+              icon={<CompareArrowsIcon />}
               onClick={handleExecute}
               loading={loading}
               sx={{ px: 6, py: 1.5 }}
