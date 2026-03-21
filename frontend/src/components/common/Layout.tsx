@@ -239,10 +239,6 @@ export default function Layout({ children }: LayoutProps) {
         color: forMobile ? 'text.primary' : D.TEXT,
       }}
     >
-      {/* Glass overlay (desktop only) */}
-      {!forMobile && (
-        <Box sx={{ position: 'absolute', inset: 0, background: D.GLASS_BG, backdropFilter: D.GLASS_BLUR, WebkitBackdropFilter: D.GLASS_BLUR, borderRadius: '16px', pointerEvents: 'none' }} />
-      )}
 
       {/* ヘッダー（Monstera準拠: 左寄せ、py:2, px:2.5） */}
       {!forMobile && (
