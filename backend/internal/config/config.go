@@ -74,9 +74,9 @@ type RedisConfig struct {
 
 // AIConfig Claude API設定
 type AIConfig struct {
-	APIKey    string
-	UseMockAI bool
-	Timeout   time.Duration
+	APIKey  string
+	AIMode  string // "mock", "cli", "api"
+	Timeout time.Duration
 }
 
 // S3Config S3設定
@@ -143,7 +143,7 @@ func Load(envFile ...string) (*Config, error) {
 		},
 		AI: AIConfig{
 			APIKey:    getEnv("ANTHROPIC_API_KEY", ""),
-			UseMockAI: getEnv("USE_MOCK_AI", "true") == "true",
+			AIMode:  parseAIMode(getEnv("USE_MOCK_AI", "true")),
 			Timeout:   time.Duration(aiTimeout) * time.Second,
 		},
 		S3: S3Config{
@@ -163,6 +163,19 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// parseAIMode USE_MOCK_AI環境変数を解析
+// "true" → "mock", "false" → "api", "cli" → "cli"
+func parseAIMode(val string) string {
+	switch strings.ToLower(val) {
+	case "false":
+		return "api"
+	case "cli":
+		return "cli"
+	default:
+		return "mock"
+	}
 }
 
 func getEnvInt(key string, defaultValue int) int {

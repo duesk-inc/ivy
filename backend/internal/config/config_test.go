@@ -55,8 +55,8 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.AI.APIKey != "" {
 		t.Errorf("AI.APIKey = %q, want empty", cfg.AI.APIKey)
 	}
-	if cfg.AI.UseMockAI != true {
-		t.Error("AI.UseMockAI should default to true")
+	if cfg.AI.AIMode != "mock" {
+		t.Errorf("AI.AIMode = %q, want mock", cfg.AI.AIMode)
 	}
 	if cfg.AI.Timeout != 60*time.Second {
 		t.Errorf("AI.Timeout = %v, want %v", cfg.AI.Timeout, 60*time.Second)
@@ -158,8 +158,8 @@ func TestLoad_EnvOverride(t *testing.T) {
 	if cfg.Database.SSLMode != "require" {
 		t.Errorf("Database.SSLMode = %q, want %q", cfg.Database.SSLMode, "require")
 	}
-	if cfg.AI.UseMockAI != false {
-		t.Error("AI.UseMockAI should be false when USE_MOCK_AI=false")
+	if cfg.AI.AIMode != "api" {
+		t.Errorf("AI.AIMode = %q, want api", cfg.AI.AIMode)
 	}
 	if cfg.AI.APIKey != "sk-test-key" {
 		t.Errorf("AI.APIKey = %q, want %q", cfg.AI.APIKey, "sk-test-key")

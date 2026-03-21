@@ -71,11 +71,13 @@ func main() {
 
 	// 6. AIサービス初期化
 	var aiService service.AIService
-	if cfg.AI.UseMockAI {
-		zapLogger.Info("MockAIService を使用")
-		aiService = service.NewMockAIService(zapLogger)
-	} else {
-		zapLogger.Info("ClaudeAIService を使用")
+	switch cfg.AI.AIMode {
+	case "cli":
+		zapLogger.Info("ClaudeCliAIService を使用（ローカル claude CLI）")
+		systemPrompt := loadSystemPrompt()
+		aiService = service.NewClaudeCliAIService(systemPrompt, zapLogger)
+	case "api":
+		zapLogger.Info("ClaudeAIService を使用（API）")
 		modelName := "claude-haiku-4-5-20251001"
 		aiModelSetting, err := settingsRepo.GetByKey(context.Background(), "ai_model")
 		if err == nil {
@@ -86,6 +88,9 @@ func main() {
 		}
 		systemPrompt := loadSystemPrompt()
 		aiService = service.NewClaudeAIService(cfg, modelName, systemPrompt, zapLogger)
+	default:
+		zapLogger.Info("MockAIService を使用")
+		aiService = service.NewMockAIService(zapLogger)
 	}
 
 	// 7. サービス初期化
