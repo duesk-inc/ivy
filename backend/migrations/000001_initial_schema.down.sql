@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS matchings;
+DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS users;

@@ -1,0 +1,75 @@
+# =============================================================================
+# Ivy Backend - Production Dockerfile
+# =============================================================================
+# Multi-stage build for optimized production image
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Builder
+# -----------------------------------------------------------------------------
+FROM golang:1.24-bookworm AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	git \
+	gcc \
+	libc6-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV GOTOOLCHAIN=local
+
+# Copy source code
+COPY . .
+
+# Install golang-migrate
+ARG MIGRATE_VERSION=v4.19.1
+RUN CGO_ENABLED=0 go install -tags 'postgres' -ldflags '-s -w' github.com/golang-migrate/migrate/v4/cmd/migrate@${MIGRATE_VERSION}
+
+# Build the application
+ARG TARGETARCH=amd64
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a -ldflags '-s -w' -tags netgo,osusergo -o /app/ivy-api ./cmd/server
+
+# -----------------------------------------------------------------------------
+# Stage 2: Runtime
+# -----------------------------------------------------------------------------
+FROM debian:bookworm-slim AS final
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ca-certificates tzdata curl \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Copy migrate tool from builder
+COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
+
+ENV TZ=Asia/Tokyo
+WORKDIR /app
+
+# Copy binary
+COPY --from=builder /app/ivy-api /usr/local/bin/ivy-api
+RUN chmod +x /usr/local/bin/ivy-api
+
+# Copy migrations
+COPY --from=builder /app/migrations ./migrations
+
+# Copy matching prompt
+COPY --from=builder /app/matching_prompt.md ./matching_prompt.md
+
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x ./entrypoint.sh
+
+# Create non-root user
+RUN adduser --system --group appuser --no-create-home --shell /bin/false --disabled-password
+RUN chown -R appuser:appuser /app
+RUN chown appuser:appuser /usr/local/bin/ivy-api
+USER appuser
+
+EXPOSE 8081
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+	CMD curl -f http://localhost:8081/health || exit 1
+
+ENTRYPOINT ["./entrypoint.sh"]

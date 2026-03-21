@@ -1,0 +1,109 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    platform: linux/arm64/v8
+    container_name: ivy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ivy}
+      POSTGRES_USER: ${DB_USER:-ivy_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ivy_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+      TZ: Asia/Tokyo
+      PGTZ: Asia/Tokyo
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ivy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ivy_user} -d ${DB_NAME:-ivy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ivy-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ivy-network
+    command: redis-server --appendonly yes
+
+  cognito-local:
+    image: jagregory/cognito-local:latest
+    container_name: ivy-cognito-local
+    restart: unless-stopped
+    ports:
+      - "9230:9229"
+    volumes:
+      - cognito_data:/app/.cognito
+    networks:
+      - ivy-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+      platforms:
+        - linux/arm64/v8
+    container_name: ivy-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      cognito-local:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_SSLMODE: disable
+      PORT: 8081
+      GIN_MODE: debug
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      COGNITO_ENDPOINT: http://cognito-local:9229
+    ports:
+      - "${API_PORT:-8081}:8081"
+    volumes:
+      - ./backend:/app
+    networks:
+      - ivy-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+      platforms:
+        - linux/arm64/v8
+    container_name: ivy-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8081/api/v1
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - ivy-network
+
+networks:
+  ivy-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  cognito_data:

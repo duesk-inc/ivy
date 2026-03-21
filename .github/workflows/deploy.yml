@@ -1,0 +1,349 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker/**'
+      - '!**/*.md'
+  workflow_dispatch:
+    inputs:
+      deploy_api:
+        description: 'Deploy API'
+        required: false
+        type: boolean
+        default: true
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  AWS_REGION: ap-northeast-1
+  PROJECT_PREFIX: ivy-prod
+  ECS_CLUSTER: ivy-prod-cluster
+
+permissions:
+  id-token: write
+  contents: read
+  checks: read
+
+jobs:
+  ci-gate:
+    name: Wait for CI
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Wait for CI checks to pass
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha;
+            const requiredChecks = ['Backend Check', 'Frontend Check'];
+            const maxWait = 15 * 60 * 1000;
+            const interval = 30 * 1000;
+            const start = Date.now();
+
+            while (Date.now() - start < maxWait) {
+              const { data } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: sha,
+              });
+
+              const checks = data.check_runs.filter(cr => requiredChecks.includes(cr.name));
+
+              if (checks.length >= requiredChecks.length) {
+                const allCompleted = checks.every(c => c.status === 'completed');
+                if (allCompleted) {
+                  const allSuccess = checks.every(c => c.conclusion === 'success');
+                  if (allSuccess) {
+                    core.info('All CI checks passed!');
+                    return;
+                  } else {
+                    const failed = checks.filter(c => c.conclusion !== 'success');
+                    core.setFailed(`CI checks failed: ${failed.map(c => c.name + '=' + c.conclusion).join(', ')}`);
+                    return;
+                  }
+                }
+              }
+
+              core.info(`Waiting for CI... (${Math.round((Date.now() - start) / 1000)}s elapsed)`);
+              await new Promise(r => setTimeout(r, interval));
+            }
+
+            core.setFailed('Timeout waiting for CI checks');
+
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    needs: ci-gate
+    if: always() && (needs.ci-gate.result == 'success' || needs.ci-gate.result == 'skipped')
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'docker/backend/**'
+            frontend:
+              - 'frontend/**'
+              - 'docker/frontend/**'
+              - 'docker/nginx/**'
+
+  deploy-api:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    needs: changes
+    environment: production
+    if: |
+      (github.event_name == 'push' && needs.changes.outputs.backend == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_api)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID_PROD }}:role/${{ env.PROJECT_PREFIX }}-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate image tag
+        id: tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "tag=api-${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./docker/backend/Dockerfile.prod
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.PROJECT_PREFIX }}-api:${{ steps.tag.outputs.tag }}
+          platforms: linux/amd64
+          provenance: false
+          cache-from: type=gha,scope=api-prod
+          cache-to: type=gha,mode=max,scope=api-prod
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.PROJECT_PREFIX }}-api \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: api
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.PROJECT_PREFIX }}-api:${{ steps.tag.outputs.tag }}
+
+      - name: Save current task definition for rollback
+        id: current-task
+        run: |
+          CURRENT_TASK_DEF=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.PROJECT_PREFIX }}-api \
+            --query 'services[0].taskDefinition' --output text)
+          echo "arn=$CURRENT_TASK_DEF" >> $GITHUB_OUTPUT
+
+      - name: Deploy to ECS
+        id: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        timeout-minutes: 15
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.PROJECT_PREFIX }}-api
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Health check
+        run: |
+          echo "Verifying API health..."
+          for i in $(seq 1 10); do
+            if curl -sf --max-time 10 https://api.ivy.duesk.co.jp/health; then
+              echo ""
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/10 failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "Health check failed after 10 attempts"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && steps.current-task.outputs.arn != ''
+        run: |
+          echo "Deployment failed. Rolling back to previous task definition..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.PROJECT_PREFIX }}-api \
+            --task-definition ${{ steps.current-task.outputs.arn }} \
+            --force-new-deployment
+          echo "Rollback initiated to: ${{ steps.current-task.outputs.arn }}"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### API Deployment (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: \`${{ env.PROJECT_PREFIX }}-api\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.deploy.outcome }}" == "failure" ]; then
+            echo "- **Status**: Rolled back to \`${{ steps.current-task.outputs.arn }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: changes
+    environment: production
+    if: |
+      (github.event_name == 'push' && needs.changes.outputs.frontend == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_frontend)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID_PROD }}:role/${{ env.PROJECT_PREFIX }}-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate image tag
+        id: tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "tag=frontend-${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/frontend/Dockerfile.prod
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.PROJECT_PREFIX }}-frontend:${{ steps.tag.outputs.tag }}
+          platforms: linux/amd64
+          provenance: false
+          cache-from: type=gha,scope=frontend-prod
+          cache-to: type=gha,mode=max,scope=frontend-prod
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.PROJECT_PREFIX }}-frontend \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: frontend
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.PROJECT_PREFIX }}-frontend:${{ steps.tag.outputs.tag }}
+
+      - name: Save current task definition for rollback
+        id: current-task
+        run: |
+          CURRENT_TASK_DEF=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.PROJECT_PREFIX }}-frontend \
+            --query 'services[0].taskDefinition' --output text)
+          echo "arn=$CURRENT_TASK_DEF" >> $GITHUB_OUTPUT
+
+      - name: Deploy to ECS
+        id: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        timeout-minutes: 15
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.PROJECT_PREFIX }}-frontend
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Health check
+        run: |
+          echo "Verifying Frontend health..."
+          for i in $(seq 1 10); do
+            if curl -sf --max-time 10 -o /dev/null https://app.ivy.duesk.co.jp; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/10 failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "Health check failed after 10 attempts"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && steps.current-task.outputs.arn != ''
+        run: |
+          echo "Deployment failed. Rolling back to previous task definition..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.PROJECT_PREFIX }}-frontend \
+            --task-definition ${{ steps.current-task.outputs.arn }} \
+            --force-new-deployment
+          echo "Rollback initiated to: ${{ steps.current-task.outputs.arn }}"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Frontend Deployment (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: \`${{ env.PROJECT_PREFIX }}-frontend\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.deploy.outcome }}" == "failure" ]; then
+            echo "- **Status**: Rolled back to \`${{ steps.current-task.outputs.arn }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  notify:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-api, deploy-frontend]
+    if: always() && (needs.deploy-api.result == 'success' || needs.deploy-frontend.result == 'success')
+    steps:
+      - name: Final Summary
+        run: |
+          echo "## Ivy Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| API | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: https://app.ivy.duesk.co.jp" >> $GITHUB_STEP_SUMMARY
+          echo "- API: https://api.ivy.duesk.co.jp" >> $GITHUB_STEP_SUMMARY
