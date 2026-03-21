@@ -1,10 +1,10 @@
 import { createTheme, alpha } from '@mui/material';
 
-// Ivy brand green (kept for primary identity)
+// Monsteraモノクローム準拠（ダーク系primary）
 const PRIMARY_COLOR = {
-  light: '#4CAF50',
-  main: '#2E7D32',
-  dark: '#1B5E20',
+  light: '#475569',
+  main: '#1E293B',
+  dark: '#0F172A',
 };
 
 // Text colors (Monstera monochrome style)
@@ -110,7 +110,8 @@ const theme = createTheme({
         },
         containedPrimary: {
           '&:hover': {
-            boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)',
+            boxShadow: '0 4px 12px rgba(30, 41, 59, 0.25)',
+            backgroundColor: '#334155',
           },
         },
         outlinedPrimary: {
