@@ -185,25 +185,6 @@ export default function Layout({ children }: LayoutProps) {
         })}
       </List>
 
-      {/* Collapse toggle button (desktop only) */}
-      {!forMobile && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 1, position: 'relative', zIndex: 1 }}>
-          <IconButton
-            onClick={() => setCollapsed(!collapsed)}
-            size="small"
-            sx={{
-              color: DARK.textSecondary,
-              bgcolor: 'rgba(255,255,255,0.08)',
-              '&:hover': { bgcolor: DARK.bgHover },
-              width: 28,
-              height: 28,
-            }}
-          >
-            {collapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
-          </IconButton>
-        </Box>
-      )}
-
       <Divider sx={{ borderColor: DARK.divider, position: 'relative', zIndex: 1 }} />
 
       {/* User section */}
@@ -369,6 +350,29 @@ export default function Layout({ children }: LayoutProps) {
           }}
         >
           {sidebarContent(false)}
+
+          {/* Collapse toggle - positioned at right edge, vertically centered */}
+          <IconButton
+            onClick={() => setCollapsed(!collapsed)}
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              right: -14,
+              transform: 'translateY(-50%)',
+              width: 28,
+              height: 28,
+              bgcolor: '#1a1a1a',
+              color: DARK.textSecondary,
+              border: '2px solid',
+              borderColor: 'background.default',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              zIndex: 10,
+              '&:hover': { bgcolor: '#2a2a2a', color: DARK.textPrimary },
+            }}
+          >
+            {collapsed ? <ChevronRightIcon sx={{ fontSize: 16 }} /> : <ChevronLeftIcon sx={{ fontSize: 16 }} />}
+          </IconButton>
         </Box>
       </Box>
 
