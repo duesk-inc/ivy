@@ -339,7 +339,7 @@ export default function Layout({ children }: LayoutProps) {
               position: 'absolute',
               top: 60,
               right: -24,
-              background: '#2A8A67',
+              background: '#36B083',
               backdropFilter: D.GLASS_BLUR,
               WebkitBackdropFilter: D.GLASS_BLUR,
               borderRadius: '0 8px 8px 0',
@@ -348,7 +348,7 @@ export default function Layout({ children }: LayoutProps) {
               padding: 0,
               boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
               '&:hover': {
-                background: '#2A8A67',
+                background: '#36B083',
                 filter: 'brightness(1.15)',
                 '& svg': { transform: 'scale(1.1)' },
               },
