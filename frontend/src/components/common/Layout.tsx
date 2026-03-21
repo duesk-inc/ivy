@@ -351,27 +351,42 @@ export default function Layout({ children }: LayoutProps) {
         >
           {sidebarContent(false)}
 
-          {/* Collapse toggle - positioned at right edge, vertically centered */}
+          {/* Collapse toggle - tab extending from sidebar right edge (Monstera style) */}
           <IconButton
             onClick={() => setCollapsed(!collapsed)}
-            size="small"
             sx={{
               position: 'absolute',
-              top: '50%',
-              right: -14,
-              transform: 'translateY(-50%)',
-              width: 28,
-              height: 28,
-              bgcolor: '#1a1a1a',
-              color: DARK.textSecondary,
-              border: '2px solid',
-              borderColor: 'background.default',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              top: 60,
+              right: -24,
+              background: '#1a1a1a',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              borderTop: '1px solid rgba(255,255,255,0.3)',
+              borderRight: '1px solid rgba(255,255,255,0.3)',
+              borderBottom: '1px solid rgba(255,255,255,0.3)',
+              borderLeft: 'none',
+              borderRadius: '0 8px 8px 0',
+              width: 24,
+              height: 40,
+              padding: 0,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+              '&:hover': {
+                background: '#1a1a1a',
+                filter: 'brightness(1.15)',
+                '& svg': { transform: 'scale(1.1)' },
+              },
+              transition: 'all 0.2s',
               zIndex: 10,
-              '&:hover': { bgcolor: '#2a2a2a', color: DARK.textPrimary },
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {collapsed ? <ChevronRightIcon sx={{ fontSize: 16 }} /> : <ChevronLeftIcon sx={{ fontSize: 16 }} />}
+            {collapsed ? (
+              <ChevronRightIcon sx={{ fontSize: 16, color: DARK.textPrimary, transition: 'transform 0.2s' }} />
+            ) : (
+              <ChevronLeftIcon sx={{ fontSize: 16, color: DARK.textPrimary, transition: 'transform 0.2s' }} />
+            )}
           </IconButton>
         </Box>
       </Box>
