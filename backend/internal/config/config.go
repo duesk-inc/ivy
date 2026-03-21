@@ -99,7 +99,7 @@ func Load(envFile ...string) (*Config, error) {
 	}
 
 	readTimeout, _ := strconv.Atoi(getEnv("SERVER_READ_TIMEOUT", "30"))
-	writeTimeout, _ := strconv.Atoi(getEnv("SERVER_WRITE_TIMEOUT", "120"))
+	writeTimeout, _ := strconv.Atoi(getEnv("SERVER_WRITE_TIMEOUT", "300"))
 	corsMaxAge, _ := strconv.Atoi(getEnv("CORS_MAX_AGE", "300"))
 	aiTimeout, _ := strconv.Atoi(getEnv("AI_TIMEOUT_SECONDS", "60"))
 

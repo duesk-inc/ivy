@@ -27,8 +27,8 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.Server.ReadTimeout != 30*time.Second {
 		t.Errorf("Server.ReadTimeout = %v, want %v", cfg.Server.ReadTimeout, 30*time.Second)
 	}
-	if cfg.Server.WriteTimeout != 120*time.Second {
-		t.Errorf("Server.WriteTimeout = %v, want %v", cfg.Server.WriteTimeout, 120*time.Second)
+	if cfg.Server.WriteTimeout != 300*time.Second {
+		t.Errorf("Server.WriteTimeout = %v, want %v", cfg.Server.WriteTimeout, 300*time.Second)
 	}
 
 	// Database
