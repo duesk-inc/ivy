@@ -13,16 +13,13 @@ import {
   Chip,
   IconButton,
   Pagination,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../components/common/Layout';
+import { SectionLoader } from '../components/common';
+import { SimpleSelect } from '../components/common/forms';
 import { getMatchings, deleteMatching } from '../lib/api/client';
 import { gradeColor, supplyChainColor } from '../utils/grade';
 import { SUPPLY_CHAIN_LABELS } from '../types';
@@ -68,20 +65,21 @@ export default function HistoryPage() {
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
           マッチング履歴
         </Typography>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>判定</InputLabel>
-          <Select
-            value={grade}
-            label="判定"
-            onChange={(e) => { setGrade(e.target.value); setPage(1); }}
-          >
-            <MenuItem value="">全て</MenuItem>
-            <MenuItem value="A">A判定</MenuItem>
-            <MenuItem value="B">B判定</MenuItem>
-            <MenuItem value="C">C判定</MenuItem>
-            <MenuItem value="D">D判定</MenuItem>
-          </Select>
-        </FormControl>
+        <SimpleSelect
+          value={grade}
+          onChange={(v) => { setGrade(v); setPage(1); }}
+          options={[
+            { value: '', label: '全て' },
+            { value: 'A', label: 'A判定' },
+            { value: 'B', label: 'B判定' },
+            { value: 'C', label: 'C判定' },
+            { value: 'D', label: 'D判定' },
+          ]}
+          label="判定"
+          size="small"
+          sx={{ minWidth: 120 }}
+          fullWidth={false}
+        />
       </Box>
 
       {error && (
@@ -91,9 +89,7 @@ export default function HistoryPage() {
       )}
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
+        <SectionLoader />
       ) : (
         <Card>
           <TableContainer>

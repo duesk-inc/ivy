@@ -1,12 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useQuery } from '@tanstack/react-query';
+import { ActionButton, SectionLoader } from '../components/common';
 import Layout from '../components/common/Layout';
 import MatchingResult from '../components/matching/MatchingResult';
 import { getMatchingDetail } from '../lib/api/client';
@@ -24,13 +23,14 @@ export default function MatchingDetailPage() {
   return (
     <Layout>
       <Box sx={{ mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
+        <ActionButton
+          buttonType="ghost"
+          icon={<ArrowBackIcon />}
           onClick={() => navigate('/history')}
           sx={{ mb: 2 }}
         >
           履歴に戻る
-        </Button>
+        </ActionButton>
       </Box>
 
       {error && (
@@ -40,9 +40,7 @@ export default function MatchingDetailPage() {
       )}
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
+        <SectionLoader />
       ) : data ? (
         <MatchingResult result={data} />
       ) : null}

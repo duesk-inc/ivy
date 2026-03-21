@@ -4,12 +4,11 @@ import {
   Box,
   Card,
   CardContent,
-  TextField,
-  Button,
   Typography,
   Alert,
-  CircularProgress,
 } from '@mui/material';
+import { ActionButton } from '../components/common';
+import { SimpleTextField } from '../components/common/forms';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -61,34 +60,34 @@ export default function LoginPage() {
           )}
 
           <Box component="form" onSubmit={handleSubmit}>
-            <TextField
+            <SimpleTextField
               label="メールアドレス"
               type="email"
               fullWidth
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={setEmail}
               sx={{ mb: 2 }}
               autoFocus
             />
-            <TextField
+            <SimpleTextField
               label="パスワード"
               type="password"
               fullWidth
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               sx={{ mb: 3 }}
             />
-            <Button
+            <ActionButton
+              buttonType="primary"
               type="submit"
-              variant="contained"
               fullWidth
               size="large"
-              disabled={loading}
+              loading={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'ログイン'}
-            </Button>
+              ログイン
+            </ActionButton>
           </Box>
         </CardContent>
       </Card>

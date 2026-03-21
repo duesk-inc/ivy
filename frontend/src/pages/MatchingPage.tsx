@@ -3,16 +3,10 @@ import {
   Box,
   Grid,
   TextField,
-  Button,
   Typography,
   Card,
   CardContent,
-  CircularProgress,
   Alert,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Divider,
   Accordion,
   AccordionSummary,
@@ -21,6 +15,8 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LinkIcon from '@mui/icons-material/Link';
+import { ActionButton } from '../components/common';
+import { SimpleTextField, SimpleSelect } from '../components/common/forms';
 import Layout from '../components/common/Layout';
 import MatchingResult from '../components/matching/MatchingResult';
 import FileUpload from '../components/matching/FileUpload';
@@ -110,7 +106,7 @@ export default function MatchingPage() {
       )}
 
       <Grid container spacing={3}>
-        {/* 案件情報 */}
+        {/* 案件情報 - multiline textarea: keep MUI TextField */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
@@ -132,7 +128,7 @@ export default function MatchingPage() {
           </Card>
         </Grid>
 
-        {/* エンジニア情報 */}
+        {/* エンジニア情報 - multiline textarea: keep MUI TextField */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
@@ -167,105 +163,100 @@ export default function MatchingPage() {
             <AccordionDetails>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 6, sm: 2 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>所属</InputLabel>
-                    <Select
-                      value={supplement.affiliation_type || ''}
-                      label="所属"
-                      onChange={(e) => updateSupplement('affiliation_type', e.target.value)}
-                    >
-                      <MenuItem value="">未選択</MenuItem>
-                      <MenuItem value="duesk">デュスク社員</MenuItem>
-                      <MenuItem value="partner">パートナー</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <SimpleSelect
+                    value={supplement.affiliation_type || ''}
+                    onChange={(v) => updateSupplement('affiliation_type', v)}
+                    options={[
+                      { value: '', label: '未選択' },
+                      { value: 'duesk', label: 'デュスク社員' },
+                      { value: 'partner', label: 'パートナー' },
+                    ]}
+                    label="所属"
+                    size="small"
+                  />
                 </Grid>
                 {supplement.affiliation_type === 'partner' && (
                   <Grid size={{ xs: 6, sm: 2 }}>
-                    <TextField
+                    <SimpleTextField
                       label="パートナー会社名"
                       size="small"
                       fullWidth
                       value={supplement.affiliation_name || ''}
-                      onChange={(e) => updateSupplement('affiliation_name', e.target.value)}
+                      onChange={(v) => updateSupplement('affiliation_name', v)}
                     />
                   </Grid>
                 )}
                 <Grid size={{ xs: 6, sm: 2 }}>
-                  <TextField
+                  <SimpleTextField
                     label="希望単価（万円）"
                     type="number"
                     size="small"
                     fullWidth
                     value={supplement.rate || ''}
-                    onChange={(e) => updateSupplement('rate', e.target.value ? Number(e.target.value) : undefined)}
+                    onChange={(v) => updateSupplement('rate', v ? Number(v) : undefined)}
                   />
                 </Grid>
                 <Grid size={{ xs: 6, sm: 2 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>国籍</InputLabel>
-                    <Select
-                      value={supplement.nationality || ''}
-                      label="国籍"
-                      onChange={(e) => updateSupplement('nationality', e.target.value)}
-                    >
-                      <MenuItem value="">未選択</MenuItem>
-                      <MenuItem value="japanese">日本</MenuItem>
-                      <MenuItem value="other">外国籍</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <SimpleSelect
+                    value={supplement.nationality || ''}
+                    onChange={(v) => updateSupplement('nationality', v)}
+                    options={[
+                      { value: '', label: '未選択' },
+                      { value: 'japanese', label: '日本' },
+                      { value: 'other', label: '外国籍' },
+                    ]}
+                    label="国籍"
+                    size="small"
+                  />
                 </Grid>
                 <Grid size={{ xs: 6, sm: 2 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>雇用形態</InputLabel>
-                    <Select
-                      value={supplement.employment_type || ''}
-                      label="雇用形態"
-                      onChange={(e) => updateSupplement('employment_type', e.target.value)}
-                    >
-                      <MenuItem value="">未選択</MenuItem>
-                      <MenuItem value="employee">正社員</MenuItem>
-                      <MenuItem value="freelance">フリーランス</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <SimpleSelect
+                    value={supplement.employment_type || ''}
+                    onChange={(v) => updateSupplement('employment_type', v)}
+                    options={[
+                      { value: '', label: '未選択' },
+                      { value: 'employee', label: '正社員' },
+                      { value: 'freelance', label: 'フリーランス' },
+                    ]}
+                    label="雇用形態"
+                    size="small"
+                  />
                 </Grid>
                 <Grid size={{ xs: 6, sm: 2 }}>
-                  <TextField
+                  <SimpleTextField
                     label="稼働可能日"
                     placeholder="2026-04"
                     size="small"
                     fullWidth
                     value={supplement.available_from || ''}
-                    onChange={(e) => updateSupplement('available_from', e.target.value)}
+                    onChange={(v) => updateSupplement('available_from', v)}
                   />
                 </Grid>
                 <Grid size={{ xs: 6, sm: 3 }}>
-                  <TextField
+                  <SimpleTextField
                     label="送信元会社名"
                     size="small"
                     fullWidth
                     value={supplement.supply_chain_source || ''}
-                    onChange={(e) => updateSupplement('supply_chain_source', e.target.value)}
+                    onChange={(v) => updateSupplement('supply_chain_source', v)}
                   />
                 </Grid>
                 <Grid size={{ xs: 6, sm: 2 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>商流</InputLabel>
-                    <Select
-                      value={supplement.supply_chain_level ?? ''}
-                      label="商流"
-                      onChange={(e) => {
-                        const v = e.target.value as string | number;
-                        updateSupplement('supply_chain_level', v === '' ? undefined : Number(v));
-                      }}
-                    >
-                      <MenuItem value="">未選択</MenuItem>
-                      <MenuItem value={1}>エンド直</MenuItem>
-                      <MenuItem value={2}>1次請け</MenuItem>
-                      <MenuItem value={3}>2次請け</MenuItem>
-                      <MenuItem value={4}>3次以上</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <SimpleSelect<string | number>
+                    value={supplement.supply_chain_level ?? ''}
+                    onChange={(v) => {
+                      updateSupplement('supply_chain_level', v === '' ? undefined : Number(v));
+                    }}
+                    options={[
+                      { value: '', label: '未選択' },
+                      { value: 1, label: 'エンド直' },
+                      { value: 2, label: '1次請け' },
+                      { value: 3, label: '2次請け' },
+                      { value: 4, label: '3次以上' },
+                    ]}
+                    label="商流"
+                    size="small"
+                  />
                 </Grid>
               </Grid>
             </AccordionDetails>
@@ -275,16 +266,16 @@ export default function MatchingPage() {
         {/* 実行ボタン */}
         <Grid size={12}>
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <Button
-              variant="contained"
+            <ActionButton
+              buttonType="primary"
               size="large"
-              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
+              icon={<SearchIcon />}
               onClick={handleExecute}
-              disabled={loading}
+              loading={loading}
               sx={{ px: 6, py: 1.5 }}
             >
               {loading ? 'AIが分析中です（最大1分程度かかります）' : 'マッチング実行'}
-            </Button>
+            </ActionButton>
           </Box>
         </Grid>
 
@@ -293,10 +284,10 @@ export default function MatchingPage() {
           <Grid size={12} ref={resultRef}>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <Button
-                variant="outlined"
+              <ActionButton
+                buttonType="secondary"
                 size="small"
-                startIcon={<LinkIcon />}
+                icon={<LinkIcon />}
                 onClick={async () => {
                   const name = window.prompt('案件グループ名を入力してください');
                   if (name) {
@@ -310,7 +301,7 @@ export default function MatchingPage() {
                 }}
               >
                 案件グループを作成
-              </Button>
+              </ActionButton>
             </Box>
             <MatchingResult result={result} />
           </Grid>
