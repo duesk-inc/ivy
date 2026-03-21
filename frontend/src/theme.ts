@@ -1,10 +1,10 @@
 import { createTheme, alpha } from '@mui/material';
 
-// Monsteraモノクローム準拠（ダーク系primary）
+// Ivy Green（アイビーグリーン基調）
 const PRIMARY_COLOR = {
-  light: '#475569',
-  main: '#1E293B',
-  dark: '#0F172A',
+  light: '#6B8F5B',
+  main: '#4A6937',
+  dark: '#35502A',
 };
 
 // Text colors (Monstera monochrome style)

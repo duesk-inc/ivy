@@ -38,9 +38,9 @@ const SIDEBAR_WIDTH = 246;
 const SIDEBAR_WIDTH_COLLAPSED = 68;
 const SIDEBAR_MARGIN = 12;
 
-// サイドバーダークグラデーション（Monsteraモノクロームパレット）
+// サイドバーグラデーション（アイビーグリーン基調）
 const SIDEBAR_BG =
-  'linear-gradient(180deg, #1a1a1a 0%, #1a1a1a 35%, #3a3a3a 70%, #3a3a3a 100%)';
+  'linear-gradient(180deg, #3B5A2B 0%, #3B5A2B 35%, #4A6937 70%, #5A7D47 100%)';
 
 // ダーク背景上のスタイルトークン
 const D = {
@@ -241,7 +241,7 @@ export default function Layout({ children }: LayoutProps) {
     >
       {/* Glass overlay (desktop only) */}
       {!forMobile && (
-        <Box sx={{ position: 'absolute', inset: 0, background: D.GLASS_BG, backdropFilter: D.GLASS_BLUR, WebkitBackdropFilter: D.GLASS_BLUR, border: D.GLASS_BORDER, borderRadius: '16px', pointerEvents: 'none' }} />
+        <Box sx={{ position: 'absolute', inset: 0, background: D.GLASS_BG, backdropFilter: D.GLASS_BLUR, WebkitBackdropFilter: D.GLASS_BLUR, borderRadius: '16px', pointerEvents: 'none' }} />
       )}
 
       {/* ヘッダー（Monstera準拠: 左寄せ、py:2, px:2.5） */}
@@ -324,19 +324,13 @@ export default function Layout({ children }: LayoutProps) {
             position: 'fixed',
             top: SIDEBAR_MARGIN + 60,
             left: SIDEBAR_MARGIN + currentWidth,
-            background: '#1a1a1a',
-            backdropFilter: D.GLASS_BLUR,
-            WebkitBackdropFilter: D.GLASS_BLUR,
-            borderTop: D.GLASS_BORDER,
-            borderRight: D.GLASS_BORDER,
-            borderBottom: D.GLASS_BORDER,
-            borderLeft: 'none',
+            background: '#3B5A2B',
             borderRadius: '0 8px 8px 0',
             width: 24,
             height: 40,
             padding: 0,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-            '&:hover': { background: '#1a1a1a', filter: 'brightness(1.15)', '& svg': { transform: 'scale(1.1)' } },
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            '&:hover': { background: '#4A6937', '& svg': { transform: 'scale(1.1)' } },
             transition: 'all 0.2s',
             zIndex: 1200,
             display: 'flex',
