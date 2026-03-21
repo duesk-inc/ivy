@@ -4,16 +4,12 @@ import {
   Typography,
   Card,
   CardContent,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
-  CircularProgress,
   Divider,
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { SectionLoader } from '../components/common';
+import { SimpleTextField, SimpleSelect, CurrencyTextField } from '../components/common/forms';
 import Layout from '../components/common/Layout';
 import { getSettings, updateSetting } from '../lib/api/client';
 
@@ -77,9 +73,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <Layout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
+        <SectionLoader />
       </Layout>
     );
   }
@@ -100,28 +94,39 @@ export default function SettingsPage() {
             マージン設定
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>種別</InputLabel>
-              <Select
-                value={margin.type}
-                label="種別"
-                onChange={(e) => handleMarginTypeUpdate(e.target.value)}
-              >
-                <MenuItem value="fixed">固定金額</MenuItem>
-                <MenuItem value="percentage">パーセンテージ</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label={margin.type === 'fixed' ? '金額（万円）' : 'パーセンテージ（%）'}
-              type="number"
+            <SimpleSelect
+              value={margin.type}
+              onChange={(v) => handleMarginTypeUpdate(v)}
+              options={[
+                { value: 'fixed', label: '固定金額' },
+                { value: 'percentage', label: 'パーセンテージ' },
+              ]}
+              label="種別"
               size="small"
-              value={margin.type === 'fixed' ? margin.amount / 10000 : margin.amount}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                handleMarginUpdate(margin.type === 'fixed' ? v * 10000 : v);
-              }}
-              sx={{ width: 150 }}
+              sx={{ minWidth: 150 }}
+              fullWidth={false}
             />
+            {margin.type === 'fixed' ? (
+              <CurrencyTextField
+                label="金額（万円）"
+                size="small"
+                value={margin.amount / 10000}
+                onChange={(v) => handleMarginUpdate(v * 10000)}
+                currencyPosition="end"
+                sx={{ width: 150 }}
+                fullWidth={false}
+              />
+            ) : (
+              <SimpleTextField
+                label="パーセンテージ（%）"
+                type="number"
+                size="small"
+                value={margin.amount}
+                onChange={(v) => handleMarginUpdate(Number(v))}
+                sx={{ width: 150 }}
+                fullWidth={false}
+              />
+            )}
             {margin.type === 'fixed' && (
               <Typography color="text.secondary">
                 （{margin.amount.toLocaleString()}円）
@@ -137,59 +142,55 @@ export default function SettingsPage() {
           <Typography variant="h6" sx={{ mb: 2 }}>
             AIモデル設定
           </Typography>
-          <FormControl fullWidth size="small">
-            <InputLabel>モデル</InputLabel>
-            <Select
-              value={aiModel.model}
-              label="モデル"
-              onChange={(e) => handleModelUpdate(e.target.value)}
-            >
-              {AI_MODELS.map((m) => (
-                <MenuItem key={m.value} value={m.value}>
-                  {m.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SimpleSelect
+            value={aiModel.model}
+            onChange={(v) => handleModelUpdate(v)}
+            options={AI_MODELS}
+            label="モデル"
+            size="small"
+          />
         </CardContent>
       </Card>
 
-      {/* データ保持期間（設計書セクション7） */}
+      {/* データ保持期間 */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2 }}>
             データ保持期間
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <TextField
+            <SimpleTextField
               label="案件情報（日）"
               type="number"
               size="small"
               value={dataRetention.jobs_days}
-              onChange={(e) => mutation.mutate({ key: 'data_retention', value: { ...dataRetention, jobs_days: Number(e.target.value) } })}
+              onChange={(v) => mutation.mutate({ key: 'data_retention', value: { ...dataRetention, jobs_days: Number(v) } })}
               sx={{ width: 150 }}
+              fullWidth={false}
             />
-            <TextField
+            <SimpleTextField
               label="人材情報（日）"
               type="number"
               size="small"
               value={dataRetention.engineers_days}
-              onChange={(e) => mutation.mutate({ key: 'data_retention', value: { ...dataRetention, engineers_days: Number(e.target.value) } })}
+              onChange={(v) => mutation.mutate({ key: 'data_retention', value: { ...dataRetention, engineers_days: Number(v) } })}
               sx={{ width: 150 }}
+              fullWidth={false}
             />
-            <TextField
+            <SimpleTextField
               label="マッチング結果（日）"
               type="number"
               size="small"
               value={dataRetention.matchings_days}
-              onChange={(e) => mutation.mutate({ key: 'data_retention', value: { ...dataRetention, matchings_days: Number(e.target.value) } })}
+              onChange={(v) => mutation.mutate({ key: 'data_retention', value: { ...dataRetention, matchings_days: Number(v) } })}
               sx={{ width: 180 }}
+              fullWidth={false}
             />
           </Box>
         </CardContent>
       </Card>
 
-      {/* API使用量（設計書セクション7） */}
+      {/* API使用量 */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 1 }}>

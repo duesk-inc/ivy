@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
+import { SectionLoader } from './components/common';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -10,11 +10,7 @@ const MatchingDetailPage = lazy(() => import('./pages/MatchingDetailPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function Loading() {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-      <CircularProgress />
-    </Box>
-  );
+  return <SectionLoader padding={8} />;
 }
 
 interface ProtectedRouteProps {

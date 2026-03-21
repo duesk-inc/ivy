@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Box, Button, Typography, Chip } from '@mui/material';
+import { Box, Typography, Chip } from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { ActionButton } from '../common';
 
 interface FileUploadProps {
   onUpload: (file: File) => Promise<void>;
@@ -46,15 +47,15 @@ export default function FileUpload({ onUpload }: FileUploadProps) {
         hidden
         onChange={handleChange}
       />
-      <Button
-        variant="outlined"
-        startIcon={<AttachFileIcon />}
+      <ActionButton
+        buttonType="secondary"
+        icon={<AttachFileIcon />}
         onClick={handleClick}
-        disabled={uploading}
+        loading={uploading}
         size="small"
       >
         {uploading ? 'アップロード中...' : 'ファイル選択'}
-      </Button>
+      </ActionButton>
       <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
         Excel(.xlsx/.xls) / PDF(.pdf) 最大10MB
       </Typography>
