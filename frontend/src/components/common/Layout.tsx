@@ -312,37 +312,59 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <Box component="nav" sx={{ width: currentWidth + SIDEBAR_MARGIN * 2, flexShrink: 0, transition: 'width 0.2s ease' }}>
-        {/* サイドバー本体 */}
-        <Box sx={{ position: 'fixed', top: SIDEBAR_MARGIN, left: SIDEBAR_MARGIN, width: currentWidth, height: `calc(100vh - ${SIDEBAR_MARGIN * 2}px)`, overflow: 'auto', transition: 'width 0.2s ease', '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-          {sidebarContent(false)}
-        </Box>
+        <Box sx={{
+          position: 'fixed',
+          top: SIDEBAR_MARGIN,
+          left: SIDEBAR_MARGIN,
+          width: currentWidth,
+          height: `calc(100vh - ${SIDEBAR_MARGIN * 2}px)`,
+          transition: 'width 0.2s ease',
+        }}>
+          {/* サイドバー本体（スクロール領域） */}
+          <Box sx={{
+            width: '100%',
+            height: '100%',
+            overflow: 'auto',
+            '&::-webkit-scrollbar': { display: 'none' },
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none',
+          }}>
+            {sidebarContent(false)}
+          </Box>
 
-        {/* 開閉ボタン（Monstera準拠: position absolute, top:60, right:-24, タブ型） */}
-        <IconButton
-          onClick={() => setCollapsed(!collapsed)}
-          sx={{
-            position: 'fixed',
-            top: SIDEBAR_MARGIN + 60,
-            left: SIDEBAR_MARGIN + currentWidth,
-            background: '#2A8A67',
-            borderRadius: '0 8px 8px 0',
-            width: 24,
-            height: 40,
-            padding: 0,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            '&:hover': { background: '#36B083', '& svg': { transform: 'scale(1.1)' } },
-            transition: 'all 0.2s',
-            zIndex: 1200,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {collapsed
-            ? <ChevronRightIcon sx={{ fontSize: 16, color: D.TEXT, transition: 'transform 0.2s' }} />
-            : <ChevronLeftIcon sx={{ fontSize: 16, color: D.TEXT, transition: 'transform 0.2s' }} />
-          }
-        </IconButton>
+          {/* 開閉ボタン（Monstera準拠: absolute, top:60, right:-24） */}
+          <IconButton
+            onClick={() => setCollapsed(!collapsed)}
+            sx={{
+              position: 'absolute',
+              top: 60,
+              right: -24,
+              background: '#2A8A67',
+              backdropFilter: D.GLASS_BLUR,
+              WebkitBackdropFilter: D.GLASS_BLUR,
+              borderRadius: '0 8px 8px 0',
+              width: 24,
+              height: 40,
+              padding: 0,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+              '&:hover': {
+                background: '#2A8A67',
+                filter: 'brightness(1.15)',
+                '& svg': { transform: 'scale(1.1)' },
+              },
+              transition: 'all 0.2s',
+              zIndex: 1200,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {collapsed
+              ? <ChevronRightIcon sx={{ fontSize: 16, color: D.TEXT, transition: 'transform 0.2s' }} />
+              : <ChevronLeftIcon sx={{ fontSize: 16, color: D.TEXT, transition: 'transform 0.2s' }} />
+            }
+          </IconButton>
+        </Box>
       </Box>
 
       <Box component="main" sx={{ flex: 1, p: 3, minWidth: 0 }}>
