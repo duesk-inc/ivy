@@ -39,17 +39,19 @@ export default function MatchingPage() {
   const handleFileUpload = async (file: File) => {
     try {
       const response = await parseFile(file);
-      setEngineerText((prev) => {
-        if (prev) return response.text + '\n\n--- 補足 ---\n' + prev;
-        return response.text;
-      });
       setEngineerFileKey(response.file_key);
-      if (response.parse_warnings.length > 0) {
+      setEngineerFileName(file.name);
+      if (response.parse_warnings?.length > 0) {
         setError(response.parse_warnings.join('\n'));
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'ファイルの読み取りに失敗しました');
     }
+  };
+
+  const handleFileClear = () => {
+    setEngineerFileKey('');
+    setEngineerFileName('');
   };
 
   const handleExecute = async () => {
@@ -131,26 +133,32 @@ export default function MatchingPage() {
           </Card>
         </Grid>
 
-        {/* エンジニア情報 - multiline textarea: keep MUI TextField */}
+        {/* エンジニア情報 */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
                 エンジニア情報
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                配信メールを貼り付け、またはファイルをアップロード
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                スキルシート（Excel/PDF）をアップロード
+              </Typography>
+              <FileUpload
+                onUpload={handleFileUpload}
+                fileName={engineerFileName}
+                onClear={handleFileClear}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>
+                補足情報（任意）
               </Typography>
               <TextField
                 multiline
-                rows={10}
+                rows={5}
                 fullWidth
-                placeholder="スキル、経験年数、希望単価、稼働時期など..."
+                placeholder="配信メールの本文、スキル補足、経験年数、稼働時期など..."
                 value={engineerText}
                 onChange={(e) => setEngineerText(e.target.value)}
-                sx={{ mb: 2 }}
               />
-              <FileUpload onUpload={handleFileUpload} />
             </CardContent>
           </Card>
         </Grid>

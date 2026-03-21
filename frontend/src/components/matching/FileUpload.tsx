@@ -11,11 +11,6 @@ interface FileUploadProps {
 }
 
 const ACCEPTED_TYPES = '.xlsx,.xls,.pdf';
-const ACCEPTED_MIME = [
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
-  'application/pdf',
-];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function FileUpload({ onUpload, fileName, onClear }: FileUploadProps) {
