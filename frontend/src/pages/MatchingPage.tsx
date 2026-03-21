@@ -20,6 +20,7 @@ import { SimpleTextField, SimpleSelect } from '../components/common/forms';
 import Layout from '../components/common/Layout';
 import MatchingResult from '../components/matching/MatchingResult';
 import FileUpload from '../components/matching/FileUpload';
+import { useToast } from '../components/common/Toast';
 import { executeMatching, parseFile, createJobGroup } from '../lib/api/client';
 import type { MatchingRequest, MatchingResponse, SupplementInfo } from '../types';
 
@@ -32,6 +33,7 @@ export default function MatchingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const resultRef = useRef<HTMLDivElement>(null);
+  const { showSuccess, showError: showErrorToast } = useToast();
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -293,9 +295,9 @@ export default function MatchingPage() {
                   if (name) {
                     try {
                       await createJobGroup(name, result.id);
-                      alert('案件グループを作成しました');
+                      showSuccess('案件グループを作成しました');
                     } catch {
-                      alert('作成に失敗しました');
+                      showErrorToast('作成に失敗しました');
                     }
                   }
                 }}
