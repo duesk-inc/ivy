@@ -75,6 +75,7 @@ func main() {
 	case "cli":
 		zapLogger.Info("ClaudeCliAIService を使用（ローカル claude CLI）")
 		systemPrompt := loadSystemPrompt()
+		zapLogger.Info("システムプロンプト読み込み完了", zap.Int("length", len(systemPrompt)))
 		aiService = service.NewClaudeCliAIService(systemPrompt, zapLogger)
 	case "api":
 		zapLogger.Info("ClaudeAIService を使用（API）")
@@ -190,6 +191,8 @@ func loadSystemPrompt() string {
 	promptPaths := []string{
 		"/app/matching_prompt.md",
 		"./matching_prompt.md",
+		"../matching_prompt.md",
+		"/Users/daichirouesaka/Documents/duesk-company/products/matching-tool/matching_prompt.md",
 	}
 	for _, path := range promptPaths {
 		data, err := os.ReadFile(path)

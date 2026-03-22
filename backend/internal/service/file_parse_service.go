@@ -1,12 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"path/filepath"
 	"strings"
+	"unicode"
 
+	gopdf "github.com/ledongthuc/pdf"
 	"github.com/xuri/excelize/v2"
 	"go.uber.org/zap"
 )
@@ -149,21 +152,35 @@ func (s *fileParseService) parsePDF(file *multipart.FileHeader) (string, []strin
 	}
 	defer src.Close()
 
-	// PDFのバイトを読み込み
 	data, err := io.ReadAll(src)
 	if err != nil {
 		return "", nil, fmt.Errorf("ファイルの読み取りに失敗しました: %w", err)
 	}
 
-	// マジックバイトでPDFか確認
-	if len(data) < 4 || string(data[:4]) != "%PDF" {
-		return "", nil, fmt.Errorf("ファイルが破損しています")
+	reader := bytes.NewReader(data)
+	pdfReader, err := gopdf.NewReader(reader, int64(len(data)))
+	if err != nil {
+		return "", nil, fmt.Errorf("PDFファイルの読み取りに失敗しました: %w", err)
 	}
 
-	// 簡易テキスト抽出（Phase 1ではpdfcpuの完全統合は後回し）
-	// テキストストリームからの基本的な抽出を試みる
-	text := extractPDFText(data)
+	var sb strings.Builder
 	var warnings []string
+
+	for i := 1; i <= pdfReader.NumPage(); i++ {
+		page := pdfReader.Page(i)
+		if page.V.IsNull() {
+			continue
+		}
+		text, err := page.GetPlainText(nil)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("ページ%dの読み取りに一部失敗しました", i))
+			continue
+		}
+		sb.WriteString(text)
+		sb.WriteString("\n")
+	}
+
+	text := sanitizeText(strings.TrimSpace(sb.String()))
 
 	if text == "" {
 		warnings = append(warnings, "テキストを抽出できませんでした。スキャン画像のPDFには対応していません。テキスト入力で補完してください")
@@ -172,37 +189,15 @@ func (s *fileParseService) parsePDF(file *multipart.FileHeader) (string, []strin
 	return text, warnings, nil
 }
 
-// extractPDFText PDFからテキストを簡易抽出
-func extractPDFText(data []byte) string {
-	// Phase 1: 基本的なテキストストリーム抽出
-	// テキストベースのPDFから文字列を抽出する簡易実装
-	content := string(data)
-	var sb strings.Builder
-
-	// BT...ET（テキストブロック）内のTj/TJ演算子からテキストを抽出
-	inText := false
-	for i := 0; i < len(content)-1; i++ {
-		if i+1 < len(content) && content[i] == 'B' && content[i+1] == 'T' {
-			inText = true
-			continue
+// sanitizeText nullバイトや非表示制御文字を除去
+func sanitizeText(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == 0 {
+			return -1
 		}
-		if i+1 < len(content) && content[i] == 'E' && content[i+1] == 'T' {
-			inText = false
-			sb.WriteString("\n")
-			continue
+		if unicode.IsControl(r) && r != '\n' && r != '\r' && r != '\t' {
+			return -1
 		}
-		if inText {
-			// (text) Tj パターンを探す
-			if content[i] == '(' {
-				j := i + 1
-				for j < len(content) && content[j] != ')' {
-					sb.WriteByte(content[j])
-					j++
-				}
-				i = j
-			}
-		}
-	}
-
-	return strings.TrimSpace(sb.String())
+		return r
+	}, s)
 }

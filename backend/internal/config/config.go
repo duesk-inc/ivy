@@ -88,14 +88,13 @@ type S3Config struct {
 
 // Load 設定を読み込む
 func Load(envFile ...string) (*Config, error) {
-	var envFileName string
-	if len(envFile) > 0 {
-		envFileName = envFile[0]
-	}
-	if envFileName != "" {
-		if err := godotenv.Load(envFileName); err != nil {
+	if len(envFile) > 0 && envFile[0] != "" {
+		if err := godotenv.Load(envFile[0]); err != nil {
 			return nil, fmt.Errorf("error loading .env file: %w", err)
 		}
+	} else {
+		// 引数なしの場合、.envファイルを自動検索して読み込む（存在しなければスキップ）
+		_ = godotenv.Load("../.env", ".env")
 	}
 
 	readTimeout, _ := strconv.Atoi(getEnv("SERVER_READ_TIMEOUT", "30"))

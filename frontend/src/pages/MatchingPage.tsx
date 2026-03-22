@@ -27,6 +27,7 @@ import type { MatchingRequest, MatchingResponse, SupplementInfo } from '../types
 export default function MatchingPage() {
   const [jobText, setJobText] = useState('');
   const [engineerText, setEngineerText] = useState('');
+  const [engineerFileText, setEngineerFileText] = useState('');
   const [engineerFileKey, setEngineerFileKey] = useState('');
   const [engineerFileName, setEngineerFileName] = useState('');
   const [supplement, setSupplement] = useState<SupplementInfo>({});
@@ -41,6 +42,7 @@ export default function MatchingPage() {
       const response = await parseFile(file);
       setEngineerFileKey(response.file_key);
       setEngineerFileName(file.name);
+      setEngineerFileText(response.text);
       if (response.parse_warnings?.length > 0) {
         setError(response.parse_warnings.join('\n'));
       }
@@ -52,6 +54,7 @@ export default function MatchingPage() {
   const handleFileClear = () => {
     setEngineerFileKey('');
     setEngineerFileName('');
+    setEngineerFileText('');
   };
 
   const handleExecute = async () => {
@@ -59,7 +62,7 @@ export default function MatchingPage() {
       setError('案件情報を入力してください');
       return;
     }
-    if (!engineerText.trim() && !engineerFileKey) {
+    if (!engineerText.trim() && !engineerFileText.trim()) {
       setError('エンジニア情報（テキストまたはファイル）を入力してください');
       return;
     }
@@ -69,9 +72,14 @@ export default function MatchingPage() {
     setResult(null);
 
     try {
+      // ファイル抽出テキストと補足テキストを結合
+      const combinedEngineerText = [engineerFileText, engineerText]
+        .filter((t) => t.trim())
+        .join('\n\n--- 補足情報 ---\n');
+
       const req: MatchingRequest = {
         job_text: jobText,
-        engineer_text: engineerText,
+        engineer_text: combinedEngineerText,
         engineer_file_key: engineerFileKey || undefined,
         supplement: Object.keys(supplement).length > 0 ? supplement : undefined,
       };
