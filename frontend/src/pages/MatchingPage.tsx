@@ -11,6 +11,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Tooltip,
 } from '@mui/material';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -109,7 +110,7 @@ export default function MatchingPage() {
   return (
     <Layout>
       <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-        マッチング実行
+        個別マッチング
       </Typography>
 
       {error && (
@@ -133,7 +134,7 @@ export default function MatchingPage() {
                 multiline
                 rows={10}
                 fullWidth
-                placeholder="案件名、必須スキル、単価、勤務地、開始時期など..."
+                placeholder={"【案件】Java開発\n【単価】〜70万\n【場所】東京都渋谷区\n【時期】即日\n【必須スキル】Java 3年以上\n\n※メール本文をそのまま貼り付けてOKです"}
                 value={jobText}
                 onChange={(e) => setJobText(e.target.value)}
               />
@@ -157,13 +158,13 @@ export default function MatchingPage() {
                 onClear={handleFileClear}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>
-                補足情報（任意）
+                スキルシートに記載のない追加情報（任意）
               </Typography>
               <TextField
                 multiline
                 rows={5}
                 fullWidth
-                placeholder="配信メールの本文、スキル補足、経験年数、稼働時期など..."
+                placeholder={"例: 希望単価60万、即日稼働可、AWS実務経験あり（経歴書未記載）\n\n※配信メールの本文を貼り付けてもOKです"}
                 value={engineerText}
                 onChange={(e) => setEngineerText(e.target.value)}
               />
@@ -303,24 +304,28 @@ export default function MatchingPage() {
           <Grid size={12} ref={resultRef}>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <ActionButton
-                buttonType="secondary"
-                size="small"
-                icon={<LinkIcon />}
-                onClick={async () => {
-                  const name = window.prompt('案件グループ名を入力してください');
-                  if (name) {
-                    try {
-                      await createJobGroup(name, result.id);
-                      showSuccess('案件グループを作成しました');
-                    } catch {
-                      showErrorToast('作成に失敗しました');
-                    }
-                  }
-                }}
-              >
-                案件グループを作成
-              </ActionButton>
+              <Tooltip title="同じ案件に複数エンジニアを比較する際に使用します" arrow>
+                <span>
+                  <ActionButton
+                    buttonType="secondary"
+                    size="small"
+                    icon={<LinkIcon />}
+                    onClick={async () => {
+                      const name = window.prompt('案件グループ名を入力してください');
+                      if (name) {
+                        try {
+                          await createJobGroup(name, result.id);
+                          showSuccess('案件グループを作成しました');
+                        } catch {
+                          showErrorToast('作成に失敗しました');
+                        }
+                      }
+                    }}
+                  >
+                    案件グループを作成
+                  </ActionButton>
+                </span>
+              </Tooltip>
             </Box>
             <MatchingResult result={result} />
           </Grid>

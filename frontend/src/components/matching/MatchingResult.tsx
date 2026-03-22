@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -6,12 +7,16 @@ import {
   Grid,
   Chip,
   Alert,
+  IconButton,
   Paper,
   Table,
   TableBody,
   TableCell,
   TableRow,
+  Tooltip,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import type { MatchingResponse, MatchResult } from '../../types';
 import { gradeColor, skillStatusColor, ngStatusColor, ngStatusLabel } from '../../utils/grade';
 import ScoreBar from './ScoreBar';
@@ -47,12 +52,55 @@ export default function MatchingResult({ result }: MatchingResultProps) {
           <Typography variant="h6" sx={{ mt: 0.5 }}>
             {result.grade}判定 - {result.grade_label}
           </Typography>
+          {result.created_at && (
+            <Typography variant="caption" sx={{ mt: 0.5, opacity: 0.8 }}>
+              {new Date(result.created_at).toLocaleString('ja-JP')}
+            </Typography>
+          )}
         </CardContent>
       </Card>
 
+      {/* === 警告（スコア直下） === */}
+      {r.warnings && r.warnings.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          {r.warnings.map((w, i) => (
+            <Alert key={i} severity="warning" sx={{ mb: 1 }}>{w}</Alert>
+          ))}
+        </Box>
+      )}
+
       <Grid container spacing={2}>
 
-        {/* === 案件情報 + エンジニア情報（スコア直下） === */}
+        {/* === スコア詳細（2カラム） === */}
+        {r.scores && (
+          <Grid size={12}>
+            <Card>
+              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
+                  スコア詳細
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <ScoreBar label="スキル適合" score={r.scores.skill?.score} max={r.scores.skill?.max} reason={r.scores.skill?.reason} />
+                      <ScoreBar label="稼働時期" score={r.scores.timing?.score} max={r.scores.timing?.max} reason={r.scores.timing?.reason} />
+                      <ScoreBar label="単価" score={r.scores.rate?.score} max={r.scores.rate?.max} reason={r.scores.rate?.reason} />
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <ScoreBar label="経験年数" score={r.scores.experience_years?.score} max={r.scores.experience_years?.max} reason={r.scores.experience_years?.reason} />
+                      <ScoreBar label="勤務形態" score={r.scores.work_style?.score ?? r.scores.location?.score} max={r.scores.work_style?.max ?? r.scores.location?.max} reason={r.scores.work_style?.reason ?? r.scores.location?.reason} />
+                      <ScoreBar label="業界経験" score={r.scores.industry?.score} max={r.scores.industry?.max} reason={r.scores.industry?.reason} />
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+        {/* === 案件情報 + エンジニア情報 === */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -63,7 +111,9 @@ export default function MatchingResult({ result }: MatchingResultProps) {
                   <SummaryRow label="勤務地" value={r.job_summary?.location} />
                   <SummaryRow label="リモート" value={r.job_summary?.remote} />
                   <SummaryRow label="単価" value={r.job_summary?.rate} />
+                  <SummaryRow label="精算" value={r.job_summary?.settlement} />
                   <SummaryRow label="開始" value={r.job_summary?.start} />
+                  <SummaryRow label="面談" value={r.job_summary?.interview_count} />
                   <SummaryRow label="条件" value={r.job_summary?.conditions} />
                 </TableBody>
               </Table>
@@ -102,19 +152,20 @@ export default function MatchingResult({ result }: MatchingResultProps) {
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
                     {r.scores.skill.required_skills.map((s, i) => (
-                      <Chip
-                        key={i}
-                        label={s.skill}
-                        size="small"
-                        sx={{
-                          bgcolor: s.status === 'met' ? skillStatusColor('met')
-                            : s.status === 'partial' ? skillStatusColor('partial')
-                            : '#e0e0e0',
-                          color: s.status === 'unmet' ? 'text.secondary' : 'white',
-                          fontWeight: 500,
-                        }}
-                        title={s.detail}
-                      />
+                      <Tooltip key={i} title={s.detail} arrow placement="top">
+                        <Chip
+                          label={s.skill}
+                          size="small"
+                          sx={{
+                            bgcolor: s.status === 'met' ? skillStatusColor('met')
+                              : s.status === 'partial' ? skillStatusColor('partial')
+                              : '#e0e0e0',
+                            color: s.status === 'unmet' ? 'text.secondary' : 'white',
+                            fontWeight: 500,
+                            cursor: 'help',
+                          }}
+                        />
+                      </Tooltip>
                     ))}
                   </Box>
                 </>
@@ -126,19 +177,20 @@ export default function MatchingResult({ result }: MatchingResultProps) {
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
                     {r.scores.skill.optional_skills.map((s, i) => (
-                      <Chip
-                        key={i}
-                        label={s.skill}
-                        size="small"
-                        sx={{
-                          bgcolor: s.status === 'met' ? skillStatusColor('met')
-                            : s.status === 'partial' ? skillStatusColor('partial')
-                            : '#e0e0e0',
-                          color: s.status === 'unmet' ? 'text.secondary' : 'white',
-                          fontWeight: 500,
-                        }}
-                        title={s.detail}
-                      />
+                      <Tooltip key={i} title={s.detail} arrow placement="top">
+                        <Chip
+                          label={s.skill}
+                          size="small"
+                          sx={{
+                            bgcolor: s.status === 'met' ? skillStatusColor('met')
+                              : s.status === 'partial' ? skillStatusColor('partial')
+                              : '#e0e0e0',
+                            color: s.status === 'unmet' ? 'text.secondary' : 'white',
+                            fontWeight: 500,
+                            cursor: 'help',
+                          }}
+                        />
+                      </Tooltip>
                     ))}
                   </Box>
                 </>
@@ -170,9 +222,9 @@ export default function MatchingResult({ result }: MatchingResultProps) {
                 </CardContent>
               </Card>
             ) : (
-              <Card>
-                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'success.main' }}>
+              <Card sx={{ bgcolor: r.negatives?.length ? 'transparent' : undefined, boxShadow: r.negatives?.length ? 0 : undefined, border: r.negatives?.length ? '1px solid' : undefined, borderColor: r.negatives?.length ? 'divider' : undefined }}>
+                <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                     NG該当なし
                   </Typography>
                 </CardContent>
@@ -207,79 +259,29 @@ export default function MatchingResult({ result }: MatchingResultProps) {
           </Box>
         </Grid>
 
-        {/* === 警告 === */}
-        {r.warnings && r.warnings.length > 0 && (
-          <Grid size={12}>
-            {r.warnings.map((w, i) => (
-              <Alert key={i} severity="warning" sx={{ mb: 1 }}>{w}</Alert>
-            ))}
-          </Grid>
-        )}
-
-        {/* === スコア詳細（2カラム） === */}
-        {r.scores && (
+        {/* === アドバイス + 追加確認メッセージ === */}
+        {(r.advice || (r.confirmation_hints && r.confirmation_hints.length > 0)) && (
           <Grid size={12}>
             <Card>
               <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
-                  スコア詳細
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                  営業確認事項
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      <ScoreBar label="スキル適合" score={r.scores.skill?.score} max={r.scores.skill?.max} reason={r.scores.skill?.reason} />
-                      <ScoreBar label="稼働時期" score={r.scores.timing?.score} max={r.scores.timing?.max} reason={r.scores.timing?.reason} />
-                      <ScoreBar label="単価" score={r.scores.rate?.score} max={r.scores.rate?.max} reason={r.scores.rate?.reason} />
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      <ScoreBar label="経験年数" score={r.scores.experience_years?.score} max={r.scores.experience_years?.max} reason={r.scores.experience_years?.reason} />
-                      <ScoreBar label="勤務地" score={r.scores.location?.score} max={r.scores.location?.max} reason={r.scores.location?.reason} />
-                      <ScoreBar label="業界経験" score={r.scores.industry?.score} max={r.scores.industry?.max} reason={r.scores.industry?.reason} />
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* === アドバイス === */}
-        {r.advice && (
-          <Grid size={12}>
-            <Card>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  アドバイス
-                </Typography>
-                <Typography variant="body2">{r.advice}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* === 確認ヒント === */}
-        {r.confirmation_hints && r.confirmation_hints.length > 0 && (
-          <Grid size={12}>
-            <Card>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
-                  追加確認のヒント
-                </Typography>
-                {r.confirmation_hints.map((hint, i) => (
-                  <Paper key={i} variant="outlined" sx={{ p: 1.5, mb: i < r.confirmation_hints.length - 1 ? 1.5 : 0 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      対象: {hint.target}
+                {r.advice && (
+                  <Typography variant="body2" sx={{ mb: r.confirmation_hints?.length ? 1.5 : 0 }}>
+                    {r.advice}
+                  </Typography>
+                )}
+                {r.confirmation_hints && r.confirmation_hints.length > 0 && (
+                  <>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      追加確認メッセージ（クリックでコピー）
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, my: 0.5 }}>
-                      {hint.question}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      根拠: {hint.reason}
-                    </Typography>
-                  </Paper>
-                ))}
+                    {r.confirmation_hints.map((hint, i) => (
+                      <ConfirmationHint key={i} hint={hint} isLast={i === r.confirmation_hints.length - 1} />
+                    ))}
+                  </>
+                )}
               </CardContent>
             </Card>
           </Grid>
@@ -300,5 +302,49 @@ function SummaryRow({ label, value }: { label: string; value?: string | number }
         <Typography variant="body2">{value}</Typography>
       </TableCell>
     </TableRow>
+  );
+}
+
+function ConfirmationHint({ hint, isLast }: { hint: { target: string; question: string; reason: string }; isLast: boolean }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(hint.question);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5, mb: isLast ? 0 : 1.5 }}>
+      <Typography variant="caption" color="text.secondary">
+        対象: {hint.target}
+      </Typography>
+      <Box
+        onClick={handleCopy}
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 0.5,
+          my: 0.5,
+          p: 1,
+          bgcolor: 'grey.50',
+          borderRadius: 1,
+          cursor: 'pointer',
+          '&:hover': { bgcolor: 'grey.100' },
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
+          {hint.question}
+        </Typography>
+        <Tooltip title={copied ? 'コピーしました' : 'クリックでコピー'} arrow>
+          <IconButton size="small" sx={{ flexShrink: 0, mt: -0.5 }}>
+            {copied ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        根拠: {hint.reason}
+      </Typography>
+    </Paper>
   );
 }

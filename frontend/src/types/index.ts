@@ -70,6 +70,8 @@ export interface MatchResult {
     remote: string;
     rate: string;
     start: string;
+    settlement?: string;
+    interview_count?: string;
     conditions: string;
   };
   engineer_summary: {
@@ -116,7 +118,13 @@ export interface MatchResult {
       max: number;
       reason: string;
     };
-    location: {
+    work_style: {
+      score: number;
+      max: number;
+      reason: string;
+      commute_time?: string;
+    };
+    location?: {
       score: number;
       max: number;
       reason: string;

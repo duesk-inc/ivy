@@ -67,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
   const currentWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
 
   const menuItems = [
-    { title: 'マッチング', path: '/', icon: <CompareArrowsIcon /> },
+    { title: '個別マッチング', path: '/', icon: <CompareArrowsIcon /> },
     { title: '履歴', path: '/history', icon: <HistoryIcon /> },
     ...(user?.role === 'admin'
       ? [{ title: '設定', path: '/settings', icon: <SettingsIcon /> }]
