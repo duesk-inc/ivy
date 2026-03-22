@@ -51,8 +51,12 @@ func (s *ClaudeCliAIService) Match(ctx context.Context, req MatchRequest) (*Matc
 	// システムプロンプト + ユーザーメッセージを結合
 	fullPrompt := s.systemPrompt + "\n\n---\n\n" + userMessage
 
-	// claude CLI実行: claude -p "prompt" --output-format json
-	cmd := exec.CommandContext(ctx, "claude", "-p", fullPrompt, "--output-format", "json")
+	// claude CLI実行: stdin経由でプロンプトを渡す（引数長制限を回避）
+	cmd := exec.CommandContext(ctx, "claude", "-p", "-", "--output-format", "json")
+	cmd.Stdin = strings.NewReader(fullPrompt)
+
+	s.logger.Info("claude CLI実行開始", zap.Int("prompt_length", len(fullPrompt)))
+
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
