@@ -9,6 +9,11 @@ import type {
   SettingsResponse,
   SupplementInfo,
   JobGroup,
+  JobListResponse,
+  EngineerProfileListResponse,
+  EmailSyncResponse,
+  BatchMatchingPreview,
+  BatchMatchingResponse,
 } from '../../types';
 
 const TOKEN_KEY = 'ivy_access_token';
@@ -152,6 +157,83 @@ export async function linkMatchingToJobGroup(matchingId: string, jobGroupId: str
 
 export async function unlinkMatchingFromJobGroup(matchingId: string): Promise<void> {
   await apiClient.delete(`/matchings/${matchingId}/job-group`);
+}
+
+// ---------- Phase 2: Jobs ----------
+
+export async function getJobs(params?: {
+  page?: number;
+  page_size?: number;
+  start_month?: string;
+  status?: string;
+}): Promise<JobListResponse> {
+  const { data } = await apiClient.get<JobListResponse>('/jobs', { params });
+  return data;
+}
+
+// ---------- Phase 2: Engineer Profiles ----------
+
+export async function getEngineerProfiles(params?: {
+  page?: number;
+  page_size?: number;
+  start_month?: string;
+  status?: string;
+}): Promise<EngineerProfileListResponse> {
+  const { data } = await apiClient.get<EngineerProfileListResponse>('/engineers', { params });
+  return data;
+}
+
+// ---------- Phase 2: Email Sync ----------
+
+export async function syncEmails(): Promise<EmailSyncResponse> {
+  const { data } = await apiClient.post<EmailSyncResponse>('/emails/sync');
+  return data;
+}
+
+export async function getEmailSyncState(): Promise<{ last_synced_at?: string }> {
+  const { data } = await apiClient.get<{ last_synced_at?: string }>('/emails/sync/state');
+  return data;
+}
+
+// ---------- Phase 2: Batch Matching ----------
+
+export async function previewBatchMatching(req: {
+  start_month_from: string;
+  start_month_to: string;
+}): Promise<BatchMatchingPreview> {
+  const { data } = await apiClient.post<BatchMatchingPreview>('/matchings/batch/preview', req);
+  return data;
+}
+
+export async function executeBatchMatching(req: {
+  start_month_from: string;
+  start_month_to: string;
+}): Promise<BatchMatchingResponse> {
+  const { data } = await apiClient.post<BatchMatchingResponse>('/matchings/batch', req);
+  return data;
+}
+
+export async function getBatchMatchingStatus(id: string): Promise<BatchMatchingResponse> {
+  const { data } = await apiClient.get<BatchMatchingResponse>(`/matchings/batch/${id}`);
+  return data;
+}
+
+// ---------- Phase 2: 1:N Matching ----------
+
+export async function matchJobToEngineers(
+  jobId: string,
+  req?: { start_month_from?: string; start_month_to?: string },
+): Promise<BatchMatchingResponse> {
+  const { data } = await apiClient.post<BatchMatchingResponse>(`/jobs/${jobId}/match-engineers`, req || {});
+  return data;
+}
+
+export async function matchEngineerToJobs(
+  engineerId: string,
+  req?: { start_month_from?: string; start_month_to?: string },
+): Promise<BatchMatchingResponse> {
+  const { data } = await apiClient.post<BatchMatchingResponse>(`/engineers/${engineerId}/match-jobs`, req || {});
+  return data;
 }
 
 export default apiClient;

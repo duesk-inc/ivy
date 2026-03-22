@@ -50,9 +50,18 @@ type AIModelSetting struct {
 
 // DataRetentionSetting データ保持期間設定
 type DataRetentionSetting struct {
-	JobsDays      int `json:"jobs_days"`
-	EngineersDays int `json:"engineers_days"`
-	MatchingsDays int `json:"matchings_days"`
+	JobsDays             int `json:"jobs_days"`
+	EngineersDays        int `json:"engineers_days"`
+	MatchingsDays        int `json:"matchings_days"`
+	ProcessedEmailsDays  int `json:"processed_emails_days"`
+}
+
+// GetProcessedEmailsDaysOrDefault processed_emails_daysのデフォルト値フォールバック
+func (d *DataRetentionSetting) GetProcessedEmailsDaysOrDefault() int {
+	if d.ProcessedEmailsDays <= 0 {
+		return 180
+	}
+	return d.ProcessedEmailsDays
 }
 
 // ParseMarginSetting JSON→MarginSetting

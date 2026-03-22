@@ -63,11 +63,21 @@ func main() {
 		zapLogger.Info("Redis接続成功")
 	}
 
-	// 5. リポジトリ作成
+	// 5. リポジトリ作成（Phase 1）
 	userRepo := repository.NewUserRepository(db, zapLogger)
 	matchingRepo := repository.NewMatchingRepository(db, zapLogger)
 	jobGroupRepo := repository.NewJobGroupRepository(db, zapLogger)
 	settingsRepo := repository.NewSettingsRepository(db, zapLogger)
+
+	// 5b. リポジトリ作成（Phase 2）
+	jobRepo := repository.NewJobRepository(db, zapLogger)
+	engineerProfileRepo := repository.NewEngineerProfileRepository(db, zapLogger)
+	processedEmailRepo := repository.NewProcessedEmailRepository(db, zapLogger)
+	gmailSyncStateRepo := repository.NewGmailSyncStateRepository(db, zapLogger)
+	batchMatchingRepo := repository.NewBatchMatchingRepository(db, zapLogger)
+
+	// 5c. 起動時リカバリ: staleなバッチをfailedに更新
+	service.RecoverStaleRunning(context.Background(), batchMatchingRepo, zapLogger)
 
 	// 6. AIサービス初期化
 	var aiService service.AIService
@@ -94,19 +104,58 @@ func main() {
 		aiService = service.NewMockAIService(zapLogger)
 	}
 
-	// 7. サービス初期化
+	// 6b. EmailAIサービス初期化（Phase 2）
+	var emailAIService service.EmailAIService
+	if cfg.AI.AIMode == "api" {
+		emailAIService = service.NewClaudeEmailAIService(cfg.AI.APIKey, "claude-haiku-4-5-20251001", zapLogger)
+	} else {
+		emailAIService = service.NewMockEmailAIService()
+	}
+
+	// 7. サービス初期化（Phase 1）
 	authService := service.NewAuthService(cfg, userRepo, zapLogger)
 	matchingService := service.NewMatchingService(matchingRepo, jobGroupRepo, settingsRepo, aiService, zapLogger)
 	fileParseService := service.NewFileParseService(zapLogger)
 	s3Service := service.NewMockS3Service(zapLogger)
 
+	// 7b. サービス初期化（Phase 2）
+	var gmailService service.GmailService
+	if cfg.Gmail.Enabled {
+		gmailService = service.NewGmailService(
+			gmailSyncStateRepo, processedEmailRepo, emailAIService,
+			jobRepo, engineerProfileRepo, settingsRepo,
+			fileParseService, cfg, zapLogger,
+		)
+	} else {
+		gmailService = service.NewMockGmailService(zapLogger)
+	}
+
+	jobService := service.NewJobService(jobRepo, zapLogger)
+	engineerProfileService := service.NewEngineerProfileService(engineerProfileRepo, zapLogger)
+	prefilterService := service.NewPrefilterService(zapLogger)
+	batchMatchingService := service.NewBatchMatchingService(
+		jobRepo, engineerProfileRepo, batchMatchingRepo,
+		matchingService, prefilterService, zapLogger,
+	)
+	retentionService := service.NewRetentionService(
+		jobRepo, engineerProfileRepo, processedEmailRepo,
+		settingsRepo, zapLogger,
+	)
+
 	// 8. ハンドラー作成
-	healthHandler := handler.NewHealthHandler(db, redisClient, zapLogger)
-	authHandler := handler.NewAuthHandler(authService, zapLogger)
-	matchingHandler := handler.NewMatchingHandler(matchingService, zapLogger)
-	jobGroupHandler := handler.NewJobGroupHandler(matchingService, zapLogger)
-	fileHandler := handler.NewFileHandler(fileParseService, s3Service, zapLogger)
-	settingsHandler := handler.NewSettingsHandler(settingsRepo, zapLogger)
+	handlers := &routes.Handlers{
+		Health:          handler.NewHealthHandler(db, redisClient, zapLogger),
+		Auth:            handler.NewAuthHandler(authService, zapLogger),
+		Matching:        handler.NewMatchingHandler(matchingService, zapLogger),
+		JobGroup:        handler.NewJobGroupHandler(matchingService, zapLogger),
+		File:            handler.NewFileHandler(fileParseService, s3Service, zapLogger),
+		Settings:        handler.NewSettingsHandler(settingsRepo, zapLogger),
+		Job:             handler.NewJobHandler(jobService, zapLogger),
+		EngineerProfile: handler.NewEngineerProfileHandler(engineerProfileService, zapLogger),
+		Email:           handler.NewEmailHandler(gmailService, zapLogger),
+		BatchMatching:   handler.NewBatchMatchingHandler(batchMatchingService, zapLogger),
+		Admin:           handler.NewAdminHandler(retentionService, zapLogger),
+	}
 
 	// 9. ルーター設定
 	if cfg.IsProduction() {
@@ -133,16 +182,29 @@ func main() {
 
 	cognitoMiddleware := middleware.NewCognitoAuthMiddleware(cfg, userRepo, zapLogger)
 
-	routes.SetupRoutes(
-		router,
-		cognitoMiddleware,
-		healthHandler,
-		authHandler,
-		matchingHandler,
-		fileHandler,
-		settingsHandler,
-		jobGroupHandler,
-	)
+	routes.SetupRoutes(router, cognitoMiddleware, handlers)
+
+	// 9b. データ保持バッチ（週1回チェック）
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour) // 日次チェック
+		defer ticker.Stop()
+		for range ticker.C {
+			ctx := context.Background()
+			shouldRun, err := retentionService.ShouldRun(ctx)
+			if err != nil {
+				zapLogger.Warn("保持期間チェック失敗", zap.Error(err))
+				continue
+			}
+			if shouldRun {
+				zapLogger.Info("データクリーンアップ実行開始")
+				if _, err := retentionService.RunCleanup(ctx); err != nil {
+					zapLogger.Error("データクリーンアップ失敗", zap.Error(err))
+				} else {
+					_ = retentionService.RecordLastCleanup(ctx)
+				}
+			}
+		}
+	}()
 
 	// 10. サーバー起動
 	srv := &http.Server{

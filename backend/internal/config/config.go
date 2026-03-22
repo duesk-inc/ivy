@@ -10,6 +10,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// GmailConfig Gmail API設定
+type GmailConfig struct {
+	Enabled               bool
+	ServiceAccountKeyFile string
+	TargetEmail           string
+}
+
 // Config アプリケーション全体の設定
 type Config struct {
 	AppEnv   string
@@ -20,6 +27,7 @@ type Config struct {
 	Cognito  CognitoConfig
 	AI       AIConfig
 	S3       S3Config
+	Gmail    GmailConfig
 }
 
 // IsProduction 本番環境かどうかを判定
@@ -149,6 +157,11 @@ func Load(envFile ...string) (*Config, error) {
 			BucketName: getEnv("AWS_S3_BUCKET", "ivy-files-dev"),
 			Region:     getEnv("AWS_REGION", "ap-northeast-1"),
 			UseMockS3:  getEnv("USE_MOCK_S3", "true") == "true",
+		},
+		Gmail: GmailConfig{
+			Enabled:               getEnv("GMAIL_ENABLED", "false") == "true",
+			ServiceAccountKeyFile: getEnv("GMAIL_SERVICE_ACCOUNT_KEY_FILE", ""),
+			TargetEmail:           getEnv("GMAIL_TARGET_EMAIL", ""),
 		},
 	}
 

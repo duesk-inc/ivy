@@ -205,3 +205,115 @@ export interface SettingItem {
 export interface SettingsResponse {
   settings: SettingItem[];
 }
+
+// Phase 2 Types
+
+// Job (from email)
+export interface ParsedJobData {
+  name?: string;
+  skills?: string[];
+  rate_min?: number;
+  rate_max?: number;
+  location?: string;
+  remote?: string;
+  start_month?: string;
+  nationality_ok?: boolean;
+  freelance_ok?: boolean;
+  age_limit?: number;
+  conditions?: string;
+}
+
+export interface Job {
+  id: string;
+  raw_text: string;
+  parsed: ParsedJobData;
+  start_month?: string;
+  status: 'active' | 'archived';
+  created_at: string;
+  expires_at?: string;
+}
+
+export interface JobListResponse {
+  items: Job[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// EngineerProfile (from email)
+export interface ParsedEngineerData {
+  initials?: string;
+  age?: number;
+  gender?: string;
+  skills?: string[];
+  rate?: number;
+  start_month?: string;
+  nationality?: string;
+  employment_type?: string;
+  affiliation?: string;
+  nearest_station?: string;
+}
+
+export interface EngineerProfile {
+  id: string;
+  raw_text: string;
+  parsed: ParsedEngineerData;
+  file_key?: string;
+  start_month?: string;
+  status: 'active' | 'archived';
+  created_at: string;
+  expires_at?: string;
+}
+
+export interface EngineerProfileListResponse {
+  items: EngineerProfile[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// Batch Matching
+export interface BatchMatchingPreview {
+  total_jobs: number;
+  total_engineers: number;
+  pairs_after_filter: number;
+  estimated_cost: number;
+}
+
+export interface BatchMatchingResponse {
+  id: string;
+  batch_type: string;
+  start_month_from: string;
+  start_month_to: string;
+  total_pairs: number;
+  success_count: number;
+  failure_count: number;
+  status: 'running' | 'completed' | 'failed';
+  results: BatchMatchingResultItem[];
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface BatchMatchingResultItem {
+  job_id: string;
+  engineer_id: string;
+  job_name: string;
+  engineer_name: string;
+  total_score: number;
+  grade: string;
+  grade_label: string;
+  matching_id?: string;
+}
+
+// Email Sync
+export interface EmailSyncResponse {
+  total_processed: number;
+  new_jobs: number;
+  new_engineers: number;
+  duplicates_skipped: number;
+  other_skipped: number;
+  errors: number;
+  synced_at: string;
+}

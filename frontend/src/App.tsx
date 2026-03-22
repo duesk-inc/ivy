@@ -8,6 +8,9 @@ const MatchingPage = lazy(() => import('./pages/MatchingPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const MatchingDetailPage = lazy(() => import('./pages/MatchingDetailPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const JobsPage = lazy(() => import('./pages/JobsPage'));
+const EngineersPage = lazy(() => import('./pages/EngineersPage'));
+const BatchMatchingPage = lazy(() => import('./pages/BatchMatchingPage'));
 
 function Loading() {
   return <SectionLoader padding={8} />;
@@ -62,6 +65,30 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <MatchingDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <JobsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/engineers"
+          element={
+            <ProtectedRoute>
+              <EngineersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/batch-matching"
+          element={
+            <ProtectedRoute>
+              <BatchMatchingPage />
             </ProtectedRoute>
           }
         />

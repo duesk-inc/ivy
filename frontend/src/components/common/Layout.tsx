@@ -25,6 +25,9 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import HistoryIcon from '@mui/icons-material/History';
+import WorkIcon from '@mui/icons-material/Work';
+import PeopleIcon from '@mui/icons-material/People';
+import BatchPredictionIcon from '@mui/icons-material/BatchPrediction';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../../context/AuthContext';
@@ -69,6 +72,9 @@ export default function Layout({ children }: LayoutProps) {
   const menuItems = [
     { title: '個別マッチング', path: '/', icon: <CompareArrowsIcon /> },
     { title: '履歴', path: '/history', icon: <HistoryIcon /> },
+    { title: '案件一覧', path: '/jobs', icon: <WorkIcon /> },
+    { title: '人材一覧', path: '/engineers', icon: <PeopleIcon /> },
+    { title: '一括マッチング', path: '/batch-matching', icon: <BatchPredictionIcon /> },
     ...(user?.role === 'admin'
       ? [{ title: '設定', path: '/settings', icon: <SettingsIcon /> }]
       : []),
